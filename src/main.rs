@@ -6,10 +6,10 @@ use csv;
 use cursive::Cursive;
 use cursive::views::{Dialog, SelectView, EditView, ViewRef};
 use cursive::traits::{Identifiable, Boxable};
-use std::cell::{RefCell, Ref, RefMut};
+use std::cell::{RefCell, RefMut};
 use std::borrow::{Borrow, BorrowMut};
 use std::rc::Rc;
-use std::ops::Deref;
+use std::process::Command;
 
 
 #[derive(Debug, StructOpt)]
@@ -29,8 +29,22 @@ struct Opt {
     output_name: Option<String>,
 
     /// whether or not to edit the captions
-    #[structopt(short, long)]
+    #[structopt(short = "e", long = "edit")]
     edit: bool,
+
+    /// The command used to launch an image viewer
+    /// upon editing the caption for an image in order
+    /// to view the image who's caption is being edited
+    #[structopt(short = "c", long = "view-command")]
+    view_command: Option<String>,
+
+    /// The command used to launch an image viewer
+    /// upon editing the caption for an image in order
+    /// to view the image who's caption is being edited.
+    /// Escape dash "-" symbols with a backslash: "\-".
+    /// For example: -a "\-\-some" "command"
+    #[structopt(short = "a", long = "view-command-args")]
+    view_command_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +71,21 @@ impl CaptionRecord {
 
     fn get_label(&self) -> String {
         format!("{}: {}", self.get_filename(), self.caption)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct ViewCommand {
+    pub command: String,
+    pub args: Option<Vec<String>>,
+}
+
+impl ViewCommand {
+    pub fn new(command: &String, args: &Option<Vec<String>>) -> ViewCommand {
+        ViewCommand {
+            command: command.clone(),
+            args: args.clone(),
+        }
     }
 }
 
@@ -140,7 +169,7 @@ fn submit_callback(s: &mut Cursive) {
     record_ref.caption = new_caption_text.as_ref().clone();
 
     let selected_id = select_view_ref.selected_id().unwrap();
-    let mut select_view_ref_mut = select_view_ref.borrow_mut();
+    let select_view_ref_mut = select_view_ref.borrow_mut();
 
     //remove and insert again to get around limitation of Cursive UI not refreshing list
     select_view_ref_mut.remove_item(selected_id);
@@ -150,13 +179,36 @@ fn submit_callback(s: &mut Cursive) {
     s.pop_layer();
 }
 
-fn edit_caption(s: &mut Cursive, record: Rc<RefCell<CaptionRecord>>) {
+fn edit_caption(view_command: &Option<ViewCommand>, s: &mut Cursive, record: Rc<RefCell<CaptionRecord>>) {
     let record_ref = RefCell::borrow(record.borrow());
     let caption_text = record_ref.caption.clone();
     let image_file_name = String::from(record_ref.get_filename().clone());
 
-    let mut ev = EditView::new();
+    match view_command {
+        Some(command) => {
+            let image_path = record_ref.image_path.to_str().unwrap();
 
+            let args = command.args.clone();
+
+            let mut c = Command::new(command.command.clone());
+
+            match args {
+                Some(_args) => {
+                    for arg in _args {
+                        c.arg(arg.replace("\\", ""));
+                    }
+                }
+                None => ()
+            }
+
+            c.arg(image_path);
+            c.output().expect("unable to launch image editor");
+        }
+        None => ()
+    }
+
+
+    let mut ev = EditView::new();
     ev.set_content(caption_text);
     ev.set_on_submit(|s, _| {
         submit_callback(s);
@@ -172,7 +224,7 @@ fn edit_caption(s: &mut Cursive, record: Rc<RefCell<CaptionRecord>>) {
 }
 
 fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord> {
-    if !opt.edit {
+    if opt.edit == false {
         return captions.clone();
     }
 
@@ -189,20 +241,26 @@ fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord>
 
     for record in &editable_captions {
         let record_reference = RefCell::borrow(record.borrow());
-        let image_file_name = String::from(record_reference.get_filename().clone());
-        let caption = String::from(record_reference.caption.clone());
         let label = record_reference.get_label();
         select_view.add_item(label, record.clone());
     }
 
-    select_view.set_on_submit(|s, record: &Rc<RefCell<CaptionRecord>>| {
-        edit_caption(s, record.clone());
+    let view_command: Option<ViewCommand> = match &opt.view_command {
+        Some(command) => Some(ViewCommand::new(command, &opt.view_command_args)),
+        None => None
+    };
+
+    let view_command_rc = Rc::new(view_command);
+
+    select_view.set_on_submit(move |s, record: &Rc<RefCell<CaptionRecord>>| {
+        let vc = view_command_rc.clone();
+        edit_caption(vc.as_ref(), s, record.clone());
     });
 
-    // Creates a dialog with a single "Quit" button
+    // Creates a dialog with a single "Ok" button
     siv.add_layer(Dialog::around(select_view.with_id("select_image"))
         .title("Caption Editor")
-        .button("Quit", |s| s.quit()));
+        .button("Ok", |s| s.quit()));
 
     // Starts the event loop.
     siv.run();
@@ -219,6 +277,8 @@ fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord>
 
 fn main() {
     let opt = Opt::from_args();
+
+    println!("{:?}", opt);
 
     let gallery_dir = match opt.gallery_dir.clone() {
         Some(path) => path,
