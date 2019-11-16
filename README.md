@@ -44,3 +44,12 @@ Using the [feh](https://feh.finalrewind.org/) image viewer to preview images whi
 ```
 photo-captioner -e -c "feh" -a "\-\-scale-down" "\-B" "black" -- /photo/gallery/path
 ```
+
+## Features
+
+Features available are ticked, todo items remain unchecked until completed.
+
+ - [x] generate captions.csv file in gallery directory
+ - [x] gui (terminal ui) editor for editing captions
+ - [x] update captions.csv with new images
+ - [ ] write/read to jpg exif
