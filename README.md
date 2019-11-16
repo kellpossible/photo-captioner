@@ -2,6 +2,8 @@
 
 This is a command line application to aid in the creation and editing of captions for a gallery of images.
 
+![edit menu screenshot](screenshots/edit_menu.png)
+
 Command Line Options:
 ```
 USAGE:
@@ -29,3 +31,16 @@ ARGS:
     <gallery-dir>    Directory of the gallery to generate captions for
 ```
 
+CSV output file:
+```csv
+Image,Caption
+image_filename.jpg,caption
+```
+
+## Example
+
+Using the [feh](https://feh.finalrewind.org/) image viewer to preview images while editing captions, and scale them nicely to fit the screen.
+
+```
+photo-captioner -e -c "feh" -a "\-\-scale-down" "\-B" "black" -- /photo/gallery/path
+```
