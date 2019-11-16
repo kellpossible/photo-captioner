@@ -5,16 +5,25 @@ This is a command line application to aid in the creation and editing of caption
 Command Line Options:
 ```
 USAGE:
-    photo-captioner [OPTIONS] [gallery-dir]
+    photo-captioner [FLAGS] [OPTIONS] [--] [gallery-dir]
 
 FLAGS:
+    -e, --edit       whether or not to edit the captions
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -n, --output-name <output-name>    The name of the output file (if there is one). Will be "captions.csv" by default
-                                       for the "csv" output-type.
-    -t, --output-type <output-type>    The type of output, available options: "csv" [default: csv]
+    -n, --output-name <output-name>
+            The name of the output file (if there is one). Will be "captions.csv" by default for the "csv" output-type.
+
+    -t, --output-type <output-type>                   The type of output, available options: "csv" [default: csv]
+    -c, --view-command <view-command>
+            The command used to launch an image viewer upon editing the caption for an image in order to view the image
+            who's caption is being edited
+    -a, --view-command-args <view-command-args>...
+            The command used to launch an image viewer upon editing the caption for an image in order to view the image
+            who's caption is being edited. Escape dash "-" symbols with a backslash: "\-". For example: -a "\-\-some"
+            "command"
 
 ARGS:
     <gallery-dir>    Directory of the gallery to generate captions for
