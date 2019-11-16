@@ -1,4 +1,4 @@
-# photo-captioner
+# photo-captioner [![](http://meritbadge.herokuapp.com/photo-captioner)](https://crates.io/crates/photo-captioner) [![](https://img.shields.io/github/license/kellpossible/photo-captioner)](https://github.com/kellpossible/photo-captioner/blob/master/LICENSE.txt)
 
 This is a command line application to aid in the creation and editing of captions for a gallery of images.
 
