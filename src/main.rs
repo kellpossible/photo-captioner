@@ -128,35 +128,44 @@ fn write_caption_csv(records: &Vec<CaptionRecord>, csv_path: &Path) -> Result<()
     Ok(())
 }
 
+fn submit_callback(s: &mut Cursive) {
+    let new_caption_text: Rc<String> = s.call_on_id("edit_caption", |view: &mut EditView| {
+    view.get_content()
+    }).unwrap().clone();
+
+    let mut select_view_ref: ViewRef<SelectView<Rc<RefCell<CaptionRecord>>>> = s.find_id::<SelectView<Rc<RefCell<CaptionRecord>>>>("select_image").unwrap();
+
+    let selection = Rc::clone(select_view_ref.selection().unwrap().as_ref());
+    let mut record_ref: RefMut<CaptionRecord> = RefCell::borrow_mut(Rc::borrow(&selection));
+    record_ref.caption = new_caption_text.as_ref().clone();
+
+    let selected_id = select_view_ref.selected_id().unwrap();
+    let mut select_view_ref_mut = select_view_ref.borrow_mut();
+
+    //remove and insert again to get around limitation of Cursive UI not refreshing list
+    select_view_ref_mut.remove_item(selected_id);
+    select_view_ref_mut.insert_item(selected_id, record_ref.get_label(), selection.clone());
+    select_view_ref_mut.set_selection(selected_id);
+
+    s.pop_layer();
+}
+
 fn edit_caption(s: &mut Cursive, record: Rc<RefCell<CaptionRecord>>) {
     let record_ref = RefCell::borrow(record.borrow());
     let caption_text = record_ref.caption.clone();
     let image_file_name = String::from(record_ref.get_filename().clone());
 
     let mut ev = EditView::new();
+
     ev.set_content(caption_text);
+    ev.set_on_submit(|s, _| {
+        submit_callback(s);
+    });
+
     s.add_layer(Dialog::around(ev.with_id("edit_caption")
             .fixed_width(10))
         .title(format!("Editing caption for image {}", image_file_name))
-        .button("Ok", |s| {
-            let new_caption_text: Rc<String> = s.call_on_id("edit_caption", |view: &mut EditView| {
-                view.get_content()
-            }).unwrap().clone();
-
-            let mut select_view_ref: ViewRef<SelectView<Rc<RefCell<CaptionRecord>>>> = s.find_id::<SelectView<Rc<RefCell<CaptionRecord>>>>("select_image").unwrap();
-
-            let selection = Rc::clone(select_view_ref.selection().unwrap().as_ref());
-            let mut record_ref: RefMut<CaptionRecord> = RefCell::borrow_mut(Rc::borrow(&selection));
-            record_ref.caption = new_caption_text.as_ref().clone();
-
-            let selected_id = select_view_ref.selected_id().unwrap();
-            let mut select_view_ref_mut = select_view_ref.borrow_mut();
-            select_view_ref_mut.remove_item(selected_id);
-            select_view_ref_mut.insert_item(selected_id, record_ref.get_label(), selection.clone());
-
-            s.pop_layer();
-            s.refresh();
-        })
+        .button("Ok", submit_callback)
         .button("Cancel", |s| {
             s.pop_layer();
         }));
@@ -178,7 +187,7 @@ fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord>
 
     let mut select_view = SelectView::<Rc<RefCell<CaptionRecord>>>::new();
 
-    for record in editable_captions {
+    for record in &editable_captions {
         let record_reference = RefCell::borrow(record.borrow());
         let image_file_name = String::from(record_reference.get_filename().clone());
         let caption = String::from(record_reference.caption.clone());
@@ -198,7 +207,14 @@ fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord>
     // Starts the event loop.
     siv.run();
 
-    return Vec::new();
+    let mut new_captions: Vec<CaptionRecord> = Vec::new();
+    for record_ref in editable_captions {
+        let record_ref_rc = record_ref.clone();
+        let new_record: CaptionRecord = RefCell::borrow(record_ref_rc.borrow()).clone();
+        new_captions.push(new_record);
+    }
+
+    return new_captions;
 }
 
 fn main() {
@@ -255,7 +271,7 @@ fn main() {
                generate_empty_captions(&image_paths)
            };
 
-           edit_captions(&opt, &mut captions);
+           captions = edit_captions(&opt, &mut captions);
 
            write_caption_csv(&captions, csv_path.as_path()).expect("unable to write captions to csv");
        },
