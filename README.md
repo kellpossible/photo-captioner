@@ -4,6 +4,11 @@ This is a command line application to aid in the creation and editing of caption
 
 ![edit menu screenshot](screenshots/edit_menu.png)
 
+Install:
+```
+cargo install photo-captioner
+```
+
 Command Line Options:
 ```
 USAGE:
