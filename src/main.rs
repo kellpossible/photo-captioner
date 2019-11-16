@@ -4,7 +4,7 @@ use std::{fs, env, io};
 use structopt::StructOpt;
 use csv;
 use cursive::Cursive;
-use cursive::views::{Dialog, SelectView, EditView, ViewRef};
+use cursive::views::{Dialog, SelectView, EditView, ViewRef, ScrollView};
 use cursive::traits::{Identifiable, Boxable};
 use std::cell::{RefCell, RefMut};
 use std::borrow::{Borrow, BorrowMut};
@@ -258,9 +258,15 @@ fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord>
     });
 
     // Creates a dialog with a single "Ok" button
-    siv.add_layer(Dialog::around(select_view.with_id("select_image"))
-        .title("Caption Editor")
-        .button("Ok", |s| s.quit()));
+    siv.add_layer(
+        Dialog::around(
+            ScrollView::new(
+                select_view.with_id("select_image")
+            )
+        )
+            .title("Caption Editor")
+            .button("Ok", |s| s.quit())
+    );
 
     // Starts the event loop.
     siv.run();
