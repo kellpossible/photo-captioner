@@ -344,9 +344,22 @@ fn main() {
                let mut captions = read_caption_csv(csv_path.as_path()).expect("unable to read captions csv");
                let mut images_with_no_cations: Vec<PathBuf> = Vec::new();
 
+               // create empty captions for images which don't have them
                for image_path in image_paths {
                    match captions.iter().find(|&record| {
-                       record.image_path.canonicalize().unwrap().eq(&image_path.canonicalize().unwrap())
+                       let csv_image_path = match record.image_path.canonicalize() {
+                           Ok(path) => path,
+                           // pretend we found it (so we don't create a new empty one for this file which doesn't exist)
+                           Err(_e) => return true
+                       };
+                       let file_image_path_result = &image_path.canonicalize();
+                       let file_image_path = match file_image_path_result {
+                           Ok(path) => path,
+                           // pretend we found it (so we don't create a new empty one for this file which doesn't exist)
+                           Err(_e) => return true
+                       };
+
+                       csv_image_path.eq(file_image_path)
                    }) {
                        Some(_record) => (),
                        None => images_with_no_cations.push(image_path)
