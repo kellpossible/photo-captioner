@@ -49,11 +49,15 @@ struct Opt {
 
 #[derive(Debug, Clone)]
 struct CaptionRecord {
+    /// Path to the image being captioned
     pub image_path: PathBuf,
+    
+    /// Caption for the image
     pub caption: String,
 }
 
 impl CaptionRecord {
+    /// Create a new CaptionRecord
     fn new(image_path: &PathBuf, caption: String) -> CaptionRecord {
         CaptionRecord {
             image_path: image_path.clone(),
@@ -61,26 +65,36 @@ impl CaptionRecord {
         }
     }
 
+    /// Create a new empty CaptionRecord
     fn empty_caption(image_path: &PathBuf) -> CaptionRecord {
         CaptionRecord::new(image_path, String::new())
     }
 
+    /// Get the name of the image file associated with this
+    /// CaptionRecord.
     fn get_filename(&self) -> &str {
         self.image_path.file_name().unwrap().to_str().unwrap()
     }
 
+    /// Get a label representing this CaptionRecord.
     fn get_label(&self) -> String {
         format!("{}: {}", self.get_filename(), self.caption)
     }
 }
 
+/// A command for previewing an image, to be executed
+/// in the shell/command line.
 #[derive(Debug, Clone)]
 struct ViewCommand {
+    /// The name/path to the executable to be executed
     pub command: String,
+
+    /// The arguments to supply when running the command
     pub args: Option<Vec<String>>,
 }
 
 impl ViewCommand {
+    /// Create a new ViewCommand
     pub fn new(command: &String, args: &Option<Vec<String>>) -> ViewCommand {
         ViewCommand {
             command: command.clone(),
@@ -89,6 +103,8 @@ impl ViewCommand {
     }
 }
 
+/// Get a Vec of paths to image files in the specified gallery_dir
+/// directory path. Or get an error if there was a problem.
 fn get_image_files(gallery_dir: &PathBuf) -> io::Result<Vec<PathBuf>> {
     let mut paths: Vec<PathBuf> = Vec::new();
     let supported_extensions = vec!["jpg", "jpeg", "png"];
@@ -113,6 +129,7 @@ fn get_image_files(gallery_dir: &PathBuf) -> io::Result<Vec<PathBuf>> {
     Ok(paths)
 }
 
+/// Generate a Vec of empty CaptionRecord from a Vec of image paths
 fn generate_empty_captions(image_paths: &Vec<PathBuf>) -> Vec<CaptionRecord> {
     let mut records: Vec<CaptionRecord> = Vec::new();
 
@@ -123,6 +140,15 @@ fn generate_empty_captions(image_paths: &Vec<PathBuf>) -> Vec<CaptionRecord> {
     return records;
 }
 
+/// Read a CSV file which specifies captions, and create a Vec of
+/// CaptionRecord, or an Error if there was a problem doing this.
+/// csv_path is the path to where the CSV file is located.
+/// 
+/// ```csv
+/// Image Path,Caption
+/// example.jpg,This is an example caption
+/// example2.jpg,Another example
+/// ```
 fn read_caption_csv(csv_path: &Path) -> Result<Vec<CaptionRecord>, Box<dyn Error>> {
     let image_directory = csv_path.parent().expect("csv path is not a valid file").to_path_buf();
     let mut captions: Vec<CaptionRecord> = Vec::new();
@@ -143,6 +169,8 @@ fn read_caption_csv(csv_path: &Path) -> Result<Vec<CaptionRecord>, Box<dyn Error
     return Ok(captions);
 }
 
+/// Write a Vec of CaptionRecord to a CSV file with the specified
+/// csv_path. 
 fn write_caption_csv(records: &Vec<CaptionRecord>, csv_path: &Path) -> Result<(), Box<dyn Error>> {
     println!("Writing captions to \"{}\".", csv_path.display());
 
@@ -157,6 +185,8 @@ fn write_caption_csv(records: &Vec<CaptionRecord>, csv_path: &Path) -> Result<()
     Ok(())
 }
 
+/// Callback to be used when the Ok button is pressed in the 
+/// edit caption dialog.
 fn submit_callback(s: &mut Cursive) {
     let new_caption_text: Rc<String> = s.call_on_id("edit_caption", |view: &mut EditView| {
     view.get_content()
@@ -179,6 +209,9 @@ fn submit_callback(s: &mut Cursive) {
     s.pop_layer();
 }
 
+/// Function triggered when the user wants to edit the caption
+/// for a selected image. Runs the ViewCommand (if specified by the user),
+/// and shows the edit caption dialog.
 fn edit_caption(view_command: &Option<ViewCommand>, s: &mut Cursive, record: Rc<RefCell<CaptionRecord>>) {
     let record_ref = RefCell::borrow(record.borrow());
     let caption_text = record_ref.caption.clone();
@@ -223,6 +256,8 @@ fn edit_caption(view_command: &Option<ViewCommand>, s: &mut Cursive, record: Rc<
         }));
 }
 
+/// Shows a command line GUI using the cursive library, for editing
+/// the captions.
 fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord> {
     if opt.edit == false {
         return captions.clone();
