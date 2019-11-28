@@ -42,12 +42,28 @@ Image,Caption
 image_filename.jpg,caption
 ```
 
+## Building on Windows
+
+Building on Windows currently requires you to select a [different backend](https://github.com/gyscos/cursive/wiki/Backends) for the [cursive](https://github.com/gyscos/cursive) library. Target specific default features doesn't appear to be well supported in cargo/rust at the moment.
+
+You have a few choices, but the one with the least effort required to setup is the [crossterm](https://github.com/TimonPost/crossterm) library. To select this for building use the command:
+
+```sh
+cargo build --no-default-features --features crossterm-backend --release
+```
+
 ## Example
 
 Using the [feh](https://feh.finalrewind.org/) image viewer to preview images while editing captions, and scale them nicely to fit the screen.
 
 ```
 photo-captioner -e -c "feh" -a "\-\-scale-down" "\-B" "black" -- /photo/gallery/path
+```
+
+Using Windows Explorer image viewer on Windows to preview images:
+
+```
+photo-captioner -e -c "explorer.exe" -- /photo/gallery/path
 ```
 
 ## Features

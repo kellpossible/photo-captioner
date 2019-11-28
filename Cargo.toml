@@ -15,4 +15,15 @@ repository = "https://github.com/kellpossible/photo-captioner"
 [dependencies]
 structopt = "0.3"
 csv = "1.1"
-cursive = "0.11"
+
+[dependencies.cursive]
+version = "0.13"
+default-features = false
+
+[features]
+default = ["ncurses-backend"]
+ncurses-backend = ["cursive/ncurses-backend"]
+pancurses-backend = ["cursive/pancurses-backend"]
+termion-backend = ["cursive/termion-backend"]
+crossterm-backend = ["cursive/crossterm-backend"]
+blt-backend = ["cursive/blt-backend"]
