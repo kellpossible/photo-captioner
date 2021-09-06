@@ -1,4 +1,4 @@
-# photo-captioner [![crates io badge](http://meritbadge.herokuapp.com/photo-captioner)](https://crates.io/crates/photo-captioner) [![license badge](https://img.shields.io/github/license/kellpossible/photo-captioner)](https://github.com/kellpossible/photo-captioner/blob/master/LICENSE.txt)
+# photo-captioner [![crates io badge](https://img.shields.io/crates/v/photo-captioner.svg)](https://crates.io/crates/photo-captioner) [![license badge](https://img.shields.io/github/license/kellpossible/photo-captioner)](https://github.com/kellpossible/photo-captioner/blob/master/LICENSE.txt)
 
 This is a command line application to aid in the creation and editing of captions for a gallery of images.
 
@@ -49,7 +49,7 @@ image_filename.jpg,caption
 
 Building on Windows currently requires you to select a [different backend](https://github.com/gyscos/cursive/wiki/Backends) for the [cursive](https://github.com/gyscos/cursive) library. Target specific default features doesn't appear to be well supported in cargo/rust at the moment.
 
-You have a few choices, but the one with the least effort required to setup is the [crossterm](https://github.com/TimonPost/crossterm) library. To select this for building use the command:
+You have a few choices, but the one with the least effort required to setup is the [crossterm](https://github.com/crossterm-rs/crossterm) library. To select this for building use the command:
 
 ```sh
 cargo build --no-default-features --features crossterm-backend --release
