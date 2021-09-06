@@ -1,16 +1,18 @@
-# photo-captioner [![](http://meritbadge.herokuapp.com/photo-captioner)](https://crates.io/crates/photo-captioner) [![](https://img.shields.io/github/license/kellpossible/photo-captioner)](https://github.com/kellpossible/photo-captioner/blob/master/LICENSE.txt)
+# photo-captioner [![crates io badge](http://meritbadge.herokuapp.com/photo-captioner)](https://crates.io/crates/photo-captioner) [![license badge](https://img.shields.io/github/license/kellpossible/photo-captioner)](https://github.com/kellpossible/photo-captioner/blob/master/LICENSE.txt)
 
 This is a command line application to aid in the creation and editing of captions for a gallery of images.
 
 ![edit menu screenshot](screenshots/edit_menu.png)
 
 Install:
-```
+
+```bash
 cargo install photo-captioner
 ```
 
 Command Line Options:
-```
+
+```txt
 USAGE:
     photo-captioner [FLAGS] [OPTIONS] [--] [gallery-dir]
 
@@ -37,6 +39,7 @@ ARGS:
 ```
 
 CSV output file:
+
 ```csv
 Image,Caption
 image_filename.jpg,caption
@@ -56,13 +59,13 @@ cargo build --no-default-features --features crossterm-backend --release
 
 Using the [feh](https://feh.finalrewind.org/) image viewer to preview images while editing captions, and scale them nicely to fit the screen.
 
-```
+```bash
 photo-captioner -e -c "feh" -a "\-\-scale-down" "\-B" "black" -- /photo/gallery/path
 ```
 
 Using Windows Explorer image viewer on Windows to preview images:
 
-```
+```bash
 photo-captioner -e -c "explorer.exe" -- /photo/gallery/path
 ```
 
@@ -70,7 +73,7 @@ photo-captioner -e -c "explorer.exe" -- /photo/gallery/path
 
 Features available are ticked, todo items remain unchecked until completed.
 
- - [x] generate captions.csv file in gallery directory
- - [x] gui (terminal ui) editor for editing captions
- - [x] update captions.csv with new images
- - [ ] write/read to jpg exif
+- [x] generate captions.csv file in gallery directory
+- [x] gui (terminal ui) editor for editing captions
+- [x] update captions.csv with new images
+- [ ] write/read to jpg exif

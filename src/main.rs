@@ -3,7 +3,7 @@ use std::path::{PathBuf, Path};
 use std::{fs, env, io};
 use structopt::StructOpt;
 use csv;
-use cursive::Cursive;
+use cursive::{Cursive, CursiveExt};
 use cursive::views::{Dialog, SelectView, EditView, ViewRef, ScrollView};
 use cursive::traits::{Identifiable, Boxable};
 use std::cell::{RefCell, RefMut};
@@ -11,6 +11,23 @@ use std::borrow::{Borrow, BorrowMut};
 use std::rc::Rc;
 use std::process::Command;
 
+
+#[derive(Debug, PartialEq)]
+struct StringArray(Vec<String>);
+
+impl std::str::FromStr for StringArray {
+    type Err = Box<dyn std::error::Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StringArray(s.split(",").map(|x| x.trim().to_owned()).collect()))
+    }
+}
+
+impl AsRef<[String]> for StringArray {
+    fn as_ref(&self) -> &[String] {
+        self.0.as_ref()
+    }
+}
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "image-captioner", about = "Edit captions for a gallery of images.")]
@@ -45,6 +62,10 @@ struct Opt {
     /// For example: -a "\-\-some" "command"
     #[structopt(short = "a", long = "view-command-args")]
     view_command_args: Option<Vec<String>>,
+
+    /// File extensions recognised as images that require captions.
+    #[structopt(short = "x", long = "extensions", default_value = "jpg, jpeg, png, heif")]
+    extensions: StringArray,
 }
 
 #[derive(Debug, Clone)]
@@ -105,9 +126,8 @@ impl ViewCommand {
 
 /// Get a Vec of paths to image files in the specified gallery_dir
 /// directory path. Or get an error if there was a problem.
-fn get_image_files(gallery_dir: &PathBuf) -> io::Result<Vec<PathBuf>> {
+fn get_image_files(gallery_dir: &PathBuf, supported_extensions: &[String]) -> io::Result<Vec<PathBuf>> {
     let mut paths: Vec<PathBuf> = Vec::new();
-    let supported_extensions = vec!["jpg", "jpeg", "png"];
 
     for entry in fs::read_dir(gallery_dir)? {
         let entry_path = entry?.path().clone();
@@ -115,9 +135,8 @@ fn get_image_files(gallery_dir: &PathBuf) -> io::Result<Vec<PathBuf>> {
         match entry_path.extension() {
             Some(ext) => {
                 let ext_string = ext.to_str().expect("unable to convert path").to_lowercase();
-                let ext_str = ext_string.as_str();
 
-                if supported_extensions.contains(&ext_str)
+                if supported_extensions.contains(&ext_string)
                 {
                     paths.push(entry_path);
                 }
@@ -188,11 +207,11 @@ fn write_caption_csv(records: &Vec<CaptionRecord>, csv_path: &Path) -> Result<()
 /// Callback to be used when the Ok button is pressed in the 
 /// edit caption dialog.
 fn submit_callback(s: &mut Cursive) {
-    let new_caption_text: Rc<String> = s.call_on_id("edit_caption", |view: &mut EditView| {
+    let new_caption_text: Rc<String> = s.call_on_name("edit_caption", |view: &mut EditView| {
     view.get_content()
     }).unwrap().clone();
 
-    let mut select_view_ref: ViewRef<SelectView<Rc<RefCell<CaptionRecord>>>> = s.find_id::<SelectView<Rc<RefCell<CaptionRecord>>>>("select_image").unwrap();
+    let mut select_view_ref: ViewRef<SelectView<Rc<RefCell<CaptionRecord>>>> = s.find_name::<SelectView<Rc<RefCell<CaptionRecord>>>>("select_image").unwrap();
 
     let selection = Rc::clone(select_view_ref.selection().unwrap().as_ref());
     let mut record_ref: RefMut<CaptionRecord> = RefCell::borrow_mut(Rc::borrow(&selection));
@@ -247,8 +266,7 @@ fn edit_caption(view_command: &Option<ViewCommand>, s: &mut Cursive, record: Rc<
         submit_callback(s);
     });
 
-    s.add_layer(Dialog::around(ev.with_id("edit_caption")
-            .fixed_width(10))
+    s.add_layer(Dialog::around(ev.with_name("edit_caption").min_width(10))
         .title(format!("Editing caption for image {}", image_file_name))
         .button("Ok", submit_callback)
         .button("Cancel", |s| {
@@ -296,7 +314,7 @@ fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord>
     siv.add_layer(
         Dialog::around(
             ScrollView::new(
-                select_view.with_id("select_image")
+                select_view.with_name("select_image")
             )
         )
             .title("Caption Editor")
@@ -319,14 +337,12 @@ fn edit_captions(opt: &Opt, captions: &Vec<CaptionRecord>) -> Vec<CaptionRecord>
 fn main() {
     let opt = Opt::from_args();
 
-    println!("{:?}", opt);
-
     let gallery_dir = match opt.gallery_dir.clone() {
         Some(path) => path,
         None => env::current_dir().expect("Error: cannot get current directory")
     };
 
-    let image_paths = get_image_files(&gallery_dir).expect("Error: unable to read image files from gallery directory");
+    let image_paths = get_image_files(&gallery_dir, opt.extensions.as_ref()).expect("Error: unable to read image files from gallery directory");
 
     let output_type: String = opt.output_type.clone();
     match output_type.as_str() {
